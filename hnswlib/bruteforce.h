@@ -83,23 +83,29 @@ class BruteforceSearch : public AlgorithmInterface<dist_t> {
     }
 
 
-    void removePoint(labeltype cur_external) {
+    // Returns false if there is no element with this label.
+    bool removePoint(labeltype cur_external) {
         std::unique_lock<std::mutex> lock(index_lock);
 
         auto found = dict_external_to_internal.find(cur_external);
         if (found == dict_external_to_internal.end()) {
-            return;
+            return false;
         }
 
+        size_t cur_c = found->second;
         dict_external_to_internal.erase(found);
 
-        size_t cur_c = found->second;
-        labeltype label = *((labeltype*)(data_ + size_per_element_ * (cur_element_count-1) + data_size_));
-        dict_external_to_internal[label] = cur_c;
-        memcpy(data_ + size_per_element_ * cur_c,
-                data_ + size_per_element_ * (cur_element_count-1),
-                data_size_+sizeof(labeltype));
+        size_t last = cur_element_count - 1;
+        if (cur_c != last) {
+            // move the last element into the freed slot
+            labeltype label = *((labeltype*)(data_ + size_per_element_ * last + data_size_));
+            dict_external_to_internal[label] = cur_c;
+            memcpy(data_ + size_per_element_ * cur_c,
+                    data_ + size_per_element_ * last,
+                    data_size_+sizeof(labeltype));
+        }
         cur_element_count--;
+        return true;
     }
 
 

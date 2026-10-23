@@ -826,8 +826,8 @@ class BFIndex {
     }
 
 
-    void deleteVector(size_t label) {
-        alg->removePoint(label);
+    bool deleteVector(size_t label) {
+        return alg->removePoint(label);
     }
 
 
