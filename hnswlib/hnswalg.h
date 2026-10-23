@@ -866,6 +866,34 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
 
     /*
+    * Marks every element in `labels` deleted. Elements that are already deleted are
+    * skipped, so the same batch can be sent twice. Returns the number of elements that
+    * were actually marked. Throws if a label is unknown; the labels before it in the
+    * batch are marked at that point.
+    */
+    size_t markDelete(const std::vector<labeltype> &labels) {
+        size_t marked = 0;
+        for (labeltype label : labels) {
+            std::unique_lock <std::mutex> lock_label(getLabelOpMutex(label));
+
+            std::unique_lock <std::mutex> lock_table(label_lookup_lock);
+            auto search = label_lookup_.find(label);
+            if (search == label_lookup_.end()) {
+                throw std::runtime_error("Label not found");
+            }
+            tableint internalId = search->second;
+            lock_table.unlock();
+
+            if (!isMarkedDeleted(internalId)) {
+                markDeletedInternal(internalId);
+                marked++;
+            }
+        }
+        return marked;
+    }
+
+
+    /*
     * Uses the last 16 bits of the memory for the linked list size to store the mark,
     * whereas maxM0_ has to be limited to the lower 16 bits, however, still large enough in almost all cases.
     */
@@ -906,6 +934,31 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         unmarkDeletedInternal(internalId);
     }
 
+
+    /*
+    * Batch version of unmarkDelete, mirrors markDelete(labels): elements that are not
+    * deleted are skipped, returns how many were restored, throws on an unknown label.
+    */
+    size_t unmarkDelete(const std::vector<labeltype> &labels) {
+        size_t restored = 0;
+        for (labeltype label : labels) {
+            std::unique_lock <std::mutex> lock_label(getLabelOpMutex(label));
+
+            std::unique_lock <std::mutex> lock_table(label_lookup_lock);
+            auto search = label_lookup_.find(label);
+            if (search == label_lookup_.end()) {
+                throw std::runtime_error("Label not found");
+            }
+            tableint internalId = search->second;
+            lock_table.unlock();
+
+            if (isMarkedDeleted(internalId)) {
+                unmarkDeletedInternal(internalId);
+                restored++;
+            }
+        }
+        return restored;
+    }
 
 
     /*

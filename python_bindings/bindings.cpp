@@ -704,8 +704,18 @@ class Index {
     }
 
 
+    size_t markDeletedMany(const std::vector<size_t> &labels) {
+        return appr_alg->markDelete(labels);
+    }
+
+
     void unmarkDeleted(size_t label) {
         appr_alg->unmarkDelete(label);
+    }
+
+
+    size_t unmarkDeletedMany(const std::vector<size_t> &labels) {
+        return appr_alg->unmarkDelete(labels);
     }
 
 
@@ -971,7 +981,9 @@ PYBIND11_PLUGIN(hnswlib) {
             py::arg("max_elements") = 0,
             py::arg("allow_replace_deleted") = false)
         .def("mark_deleted", &Index<float>::markDeleted, py::arg("label"))
+        .def("mark_deleted", &Index<float>::markDeletedMany, py::arg("labels"))
         .def("unmark_deleted", &Index<float>::unmarkDeleted, py::arg("label"))
+        .def("unmark_deleted", &Index<float>::unmarkDeletedMany, py::arg("labels"))
         .def("resize_index", &Index<float>::resizeIndex, py::arg("new_size"))
         .def("get_max_elements", &Index<float>::getMaxElements)
         .def("get_current_count", &Index<float>::getCurrentCount)
