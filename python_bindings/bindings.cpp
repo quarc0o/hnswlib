@@ -342,7 +342,9 @@ class Index {
         std::vector<hnswlib::labeltype> ids;
 
         for (auto kv : appr_alg->label_lookup_) {
-            ids.push_back(kv.first);
+            if (!appr_alg->isMarkedDeleted(kv.second)) {
+                ids.push_back(kv.first);
+            }
         }
         return ids;
     }
